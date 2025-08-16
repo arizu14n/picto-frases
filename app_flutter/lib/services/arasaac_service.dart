@@ -22,18 +22,41 @@ class ArasaacService {
 
   Future<void> syncArasaacPictograms(String language) async {
     try {
+      // 1. Find or create the ARASAAC category
+      const categoryName = 'ARASAAC';
+      var categoryResponse = await _supabaseClient
+          .from('categories')
+          .select('id')
+          .eq('name', categoryName)
+          .maybeSingle();
+
+      int categoryId;
+      if (categoryResponse == null) {
+        // Category does not exist, create it
+        final newCategory = await _supabaseClient
+            .from('categories')
+            .insert({'name': categoryName})
+            .select('id')
+            .single();
+        categoryId = newCategory['id'];
+      } else {
+        categoryId = categoryResponse['id'];
+      }
+
+      // 2. Fetch pictograms
       final pictograms = await fetchArasaacPictograms(language);
       
+      // 3. Prepare pictograms for insertion with the category ID
       final List<Map<String, dynamic>> pictogramsToInsert = pictograms.map((p) => {
         'name': p.name,
         'image_url': p.imageUrl,
         'audio_url': p.audioUrl,
-        'category_id': p.categoryId, // Will be null for ARASAAC for now
+        'category_id': categoryId, // Assign the ARASAAC category ID
         'user_id': p.userId, // Will be null for ARASAAC
       }).toList();
 
-      // Supabase bulk insert with on conflict do nothing
-            await _supabaseClient.from('pictograms').upsert(pictogramsToInsert, onConflict: 'name', ignoreDuplicates: true);
+      // 4. Supabase bulk insert with on conflict do nothing
+      await _supabaseClient.from('pictograms').upsert(pictogramsToInsert, onConflict: 'name', ignoreDuplicates: true);
       print('ARASAAC pictograms synced successfully!');
     } catch (e) {
       print('Error syncing ARASAAC pictograms: $e');

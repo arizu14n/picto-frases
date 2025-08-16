@@ -50,9 +50,10 @@ class Pictogram {
   factory Pictogram.fromArasaacJson(Map<String, dynamic> json) {
     final String baseUrl = 'https://api.arasaac.org/v1/pictograms/';
     final int arasaacId = json['_id'] as int;
-    final String name = (json['keywords'] as List).isNotEmpty
+    final String keyword = (json['keywords'] as List).isNotEmpty
         ? (json['keywords'][0]['keyword'] as String)
-        : 'Sin nombre'; // Fallback if no keyword
+        : 'Sin nombre';
+    final String name = '$keyword - $arasaacId';
 
     return Pictogram(
       id: arasaacId, // Use ARASAAC's ID
